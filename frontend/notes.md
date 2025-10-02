@@ -1,0 +1,2 @@
+- `useEffect(callback, depList)` runs the callback hook once if the dependencies list is empty.
+    - Due to React's Strict Mode, the callback runs twice in development mode (as a safety check?), but in production mode it runs only once
