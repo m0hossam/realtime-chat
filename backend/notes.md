@@ -1,0 +1,11 @@
+- For realtime chat, we use WebSocket
+    - HTTP/2 has persistent connections, but it is not designed for bidirectional communication.
+    - HTTP is designed for applications where the client initiates the connection
+    - Realtime chatting using HTTP will require continuously polling the server for updates -> Latency + Overhead
+    - Websocket is full-duplex, perfect for bidirectional communication, low overhead/latency
+    - WebSocket begins as an HTTP (TCP) connection then it upgrades to a WebSocket connection
+- WebSocket handshake:
+    - Client sends HTTP request with a `Sec-WebSocket-Key` header
+    - Server appends a magic string to `Sec-WebSocket-Key`, generates its SHA1 hash then encodes it in base64, and sends it in `Sec-WebSocket-Accept` header
+    - This is proof against XSS (Cross-Site Scripting) attacks, or getting a cached response from a proxy
+- `github.com/gorilla/websocket` is the most popular Go implementation for the WebSocket protocol.
