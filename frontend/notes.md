@@ -1,2 +1,4 @@
 - `useEffect(callback, depList)` runs the callback hook once if the dependencies list is empty.
-    - Due to React's Strict Mode, the callback runs twice in development mode (as a safety check?), but in production mode it runs only once
+    - Due to React's Strict Mode, the callback runs twice in development mode (as a safety check?), but in production mode it should run only once
+- `[msgs, setMsgs] = useState([])` state hook initializes empty list and setter function
+    - When you need the previous state to compute the next state (e.g. appending to a list), then use an updater function like so `setMsgs(prevMsgs => prevMsgs.concat(newMsg))`

@@ -1,7 +1,7 @@
 var socket = new WebSocket('ws://localhost:8080/ws')
 
 // Connects to WS and listens to messages
-let connect = () => {
+let connect = (callback) => {
     console.log('Attempting connection...')
 
     socket.onopen = () => {
@@ -10,6 +10,7 @@ let connect = () => {
 
     socket.onmessage = (event) => {
         console.log('Message received: ' + event.data)
+        callback(event.data) // Passes the message to the callback in the frontend which renders it
     }
 
     socket.onclose = (event) => {
