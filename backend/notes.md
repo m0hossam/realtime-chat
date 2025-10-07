@@ -8,4 +8,8 @@
     - Client sends HTTP request with a `Sec-WebSocket-Key` header
     - Server appends a magic string to `Sec-WebSocket-Key`, generates its SHA1 hash then encodes it in base64, and sends it in `Sec-WebSocket-Accept` header
     - This is proof against XSS (Cross-Site Scripting) attacks, or getting a cached response from a proxy
-- `github.com/gorilla/websocket` is the most popular Go implementation for the WebSocket protocol.
+- `github.com/gorilla/websocket` is the most popular Go implementation for the WebSocket protocol
+- In `Go` projects, the `\pkg` directory contains library code that's ok to use by external apps
+- Unbuffered channels act like mutexes, the send `ch <- v` blocks until the receive `v := <-ch` runs
+- Starting the connection pool `go pool.Start()` is in a goroutine because it contains an infinite loop, we need to run async while we setup routes and the server
+- `client.Read()` does not need to run in a goroutine, because it is only called by the HTTP route handler which by default runs it in a separate goroutine for each client request (I think)

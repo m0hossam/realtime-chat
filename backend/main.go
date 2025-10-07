@@ -2,52 +2,29 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"github.com/m0hossam/realtime-chat/pkg/websocket"
 )
 
-var wsUpgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool { // allowing connections from any origin
-		return true
-	},
-}
-
-func reader(conn *websocket.Conn) {
-	for {
-		// Read message
-		messageType, b, err := conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		// Print the message to the console
-		fmt.Println(string(b))
-
-		// Write same message back
-		if err := conn.WriteMessage(messageType, b); err != nil {
-			log.Println(err)
-			return
-		}
-	}
-}
-
-func serveWs(w http.ResponseWriter, r *http.Request) {
+func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	// Print the request host
 	fmt.Println(r.Host)
 
 	// Upgrade connection to WS
-	ws, err := wsUpgrader.Upgrade(w, r, nil)
+	wsConn, err := websocket.Upgrade(w, r)
 	if err != nil {
-		log.Println(err)
+		fmt.Fprintf(w, "%+v\n", err) // Write detailed error to response
 	}
 
-	// Listen to messages and write them back
-	reader(ws)
+	client := &websocket.Client{
+		Conn: wsConn,
+		Pool: pool,
+	}
+
+	// Register the client to the connection pool
+	client.Pool.RegisterCh <- client
+	client.Read()
 }
 
 func setupRoutes() {
@@ -55,7 +32,14 @@ func setupRoutes() {
 		fmt.Fprintf(w, "Welcome to the Real-time Chat Application!")
 	})
 
-	http.HandleFunc("/ws", serveWs)
+	pool := websocket.NewPool()
+	go pool.Start()
+
+	// The anonymous function is just a wrapper around serveWs to pass the pool argument
+	// because http.HandleFunc only accepts functions with the signature func(http.ResponseWriter, *http.Request)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(pool, w, r)
+	})
 }
 
 func main() {
