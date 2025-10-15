@@ -23,8 +23,8 @@ func (c *Client) Read() {
 	for {
 		_, b, err := c.Conn.ReadMessage()
 		if err != nil {
-			// Only log abnormal errors, because normal closure also returns an error
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			// Only log abnormal errors, because normal closure and going away also return an error
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				fmt.Println("read error: ", err)
 			}
 			break
