@@ -25,19 +25,10 @@ func (pool *Pool) Start() {
 		case client := <-pool.RegisterCh: // New client registered
 			pool.Clients[client] = true
 			fmt.Println("Size of Connection Pool: ", len(pool.Clients))
-			// Broadcast to all clients that a user has joined
-			for c := range pool.Clients {
-				c.Conn.WriteMessage(1, []byte("New User Joined..."))
-			}
 		case client := <-pool.UnregisterCh: // Client unregistered
 			delete(pool.Clients, client)
 			fmt.Println("Size of Connection Pool: ", len(pool.Clients))
-			// Broadcast to all clients that a user has disconnected
-			for c := range pool.Clients {
-				c.Conn.WriteMessage(1, []byte("User disconnected..."))
-			}
 		case message := <-pool.BroadcastCh: // Received new message that needs to be broadcasted to all clients
-			fmt.Println("Sending message to all clients in Pool")
 			for c := range pool.Clients {
 				if err := c.Conn.WriteMessage(1, []byte(message)); err != nil {
 					fmt.Println(err)
