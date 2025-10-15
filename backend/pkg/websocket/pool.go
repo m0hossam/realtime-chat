@@ -28,11 +28,13 @@ func (pool *Pool) Start() {
 		case client := <-pool.UnregisterCh: // Client unregistered
 			delete(pool.Clients, client)
 			fmt.Println("Size of Connection Pool: ", len(pool.Clients))
-		case message := <-pool.BroadcastCh: // Received new message that needs to be broadcasted to all clients
+		case msg := <-pool.BroadcastCh: // Received new message that needs to be broadcasted to all clients
 			for c := range pool.Clients {
-				if err := c.Conn.WriteMessage(1, []byte(message)); err != nil {
-					fmt.Println(err)
-					return // Terminate all connections if one fails (overkill)
+				select {
+				case c.SendCh <- msg: // Asynchronously enqueue the message to each client's send-channel
+				default: // If a client is blocking, close his buffered channel and drop him
+					close(c.SendCh)
+					delete(pool.Clients, c)
 				}
 			}
 		}

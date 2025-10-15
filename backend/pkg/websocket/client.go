@@ -2,32 +2,48 @@ package websocket
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Pool *Pool
+	Conn   *websocket.Conn
+	Pool   *Pool
+	SendCh chan string
 }
 
 func (c *Client) Read() {
-	// Ensure client is unregistered and connection is closed when Read() returns
+	// Ensure client is unregistered and connection is closed
 	defer func() {
 		c.Pool.UnregisterCh <- c
 		c.Conn.Close()
 	}()
 
-	// Continuously read messages coming from the frontend, and broadcast them to all clients
+	// Continuously read incoming messages, and broadcast them to all clients
 	for {
 		_, b, err := c.Conn.ReadMessage()
 		if err != nil {
-			log.Println(err)
-			return
+			// Only log abnormal errors, because normal closure also returns an error
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Println("read error: ", err)
+			}
+			break
 		}
 		c.Pool.BroadcastCh <- string(b)
-		fmt.Printf("Message Received: %+v\n", string(b))
 	}
+}
+
+func (c *Client) Write() {
+	defer func() {
+		c.Conn.Close() // This is idempotent, so doing it in both Read() and Write() is safe
+	}()
+
+	// Write messages received from the channel until channel is closed
+	for msg := range c.SendCh {
+		if err := c.Conn.WriteMessage(1, []byte(msg)); err != nil {
+			break
+		}
+	}
+
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }

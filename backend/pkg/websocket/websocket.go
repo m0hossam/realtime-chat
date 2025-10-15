@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -15,11 +15,21 @@ var wsUpgrader = websocket.Upgrader{
 	},
 }
 
-func Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-	ws, err := wsUpgrader.Upgrade(w, r, nil)
+func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
+	// Upgrade connection to WS
+	wsConn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
-		return ws, err
+		fmt.Fprintf(w, "%+v\n", err) // Write detailed error to response
 	}
-	return ws, nil
+
+	// Create and register the client to the connection pool
+	client := &Client{
+		Conn:   wsConn,
+		Pool:   pool,
+		SendCh: make(chan string, 256),
+	}
+	client.Pool.RegisterCh <- client
+
+	go client.Read()
+	go client.Write()
 }
